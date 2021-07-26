@@ -8,32 +8,50 @@ server <- function(input, output, session) {
     
    
    
-    
+    output$box <- renderUI({
+      list(HTML("<table><tr>"),
+      lapply(1:length(vec_data),function(x){ 
+        html_i<-ifelse((x+-1)%%5==0,"</tr><tr><td>","<td>")
+        list(HTML(html_i),
+                                                 ligne(vec_data[x],
+                                                       matches()$matches%>%filter(type == vec_data[x])%>%pull(matche)),
+                                                 HTML("</td>"))}
+             ),
+      HTML("</tr><table>"))
+      })
     res_verif_i <- reactiveValues(df=res_verif)
     
     output$stats <- renderTable({
+     
       type_i<-input$ui_selection
+    #  print(res_regex_patient[which(res_regex_patient$id %in% res_verif_i$df$id),])
+      
       algo<- res_regex_patient[,type_i]%>%table
-      verif<-res_regex_patient[which(res_regex_patient$id %in% res_verif_i$df$id),type_i]%>%table
- 
-      if(length(verif)==0) verif<- c(0,0)
-      print(verif)
-      retour<-matrix(c("Match +",verif[1], algo[1],"Match -", verif[2], algo[2]),byrow = T,nrow = 2)
+      verif<-factor(res_regex_patient[which(res_regex_patient$id %in% res_verif_i$df$id),type_i],levels = c(T,F))%>%table%>%as.data.frame()
+ print(verif)
+      if(length(verif)==1){ verif<- data.frame(Var1 =c(T,F),Freq = c(0,0))
+      }else{
+        print(verif)
+        names(verif)<- c("Var1", "Freq")}
+      #print(verif)
+      retour<-matrix(c("Match +",verif%>%filter(Var1==T)%>%pull(Freq), algo[1],"Match -", verif%>%filter(!Var1==T)%>%pull(Freq), algo[2]),byrow = T,nrow = 2)
       colnames(retour)<- c(" ","Verifié","Total")
-      print(retour%>%as.data.frame())
+      #print(retour%>%as.data.frame())
       return(retour%>%as.data.frame()
       )
+    
     })
     observeEvent(input$goButton, {
         res <- lapply(vec_data, function(i) input[[paste0('ui_', i,"_val")]])%>%unlist
-        print(phrase_i())
-     print((res))
+        print(phrase_i()$phrase_i)
+     print((phrase_i()))
+     print(res)
 
         
         res_verif_i$df[nrow(res_verif_i$df) + 1,] <-c(res,  phrase_i()$id_i)
         
         
-        print(vec_data[names(!vec_data %in% res_verif_i$df)])
+       # print(vec_data[names(!vec_data %in% res_verif_i$df)])
       
 
        write.csv(res_verif_i$df,"essai.csv",row.names = F)
@@ -41,9 +59,9 @@ server <- function(input, output, session) {
   
     
     phrase_i<-reactive({
-        input$goButton
+      res_verif_i$df
        
-
+isolate({
         type_i<-input$ui_selection
         res_regex_patient<-res_regex_patient
 
@@ -76,10 +94,11 @@ server <- function(input, output, session) {
             pos, neg)
 
         id_i<-sample( dataselection,1)
-        
+})
 
         
         phrase_i<- phrases_patient$phrase[phrases_patient$id ==id_i]
+        print(paste("1",phrase_i))
         phrase_i<-phrase_i  %>% gsub(","," ",.)%>%gsub("'|’"," ",.)
         return(list(phrase_i=phrase_i, id_i=id_i))
     })
@@ -101,9 +120,10 @@ server <- function(input, output, session) {
     lapply(vec_data, function(i) {
         output[[paste0("ui_", i)]] <- renderText({
           
-            HTML(paste0(h3(i,strong(matches()$matches%>%filter(type == i)%>%pull(matche))),
-                        "\nExemple de phrase : ",
-                        regex_phrases%>%filter(titre==i)%>%pull(phrase) 
+            HTML(paste0(h3(i)
+                        #,strong(matches()$matches%>%filter(type == i)%>%pull(matche))),
+                        #"\nExemple de phrase : ",
+                        #regex_phrases%>%filter(titre==i)%>%pull(phrase) 
                         ))
         })
     

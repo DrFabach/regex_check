@@ -10,7 +10,8 @@ ui <- fluidPage(br(), br(),sidebarLayout(
     mainPanel(fluidPage(
         wellPanel(
             htmlOutput("phrase_serv")),
-       lapply(vec_data,ligne)
+        uiOutput("box")
+       
     )
 ))
 )
