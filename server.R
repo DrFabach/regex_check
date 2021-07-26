@@ -1,38 +1,3 @@
-library(shinyWidgets)
-library(htmltools)
-library(dplyr)
-library(stringr)
-
-library(DT)
-imagevrai<-img("www/faux.png")
-imagefaux<-'<img src="./www/faux.png" height="140" width="400"/>'
-phrase<- read.csv2("tableauregex.csv")
-vec_data<- names(phrase%>%select(-Phrases.test)%>%select(-nlpccp5))
-vec_data<-vec_data[order(vec_data, decreasing = F)]
-regex<-read.csv2("Regex.csv")
-regex<- regex%>%filter(tolower(concept)%in%tolower(vec_data))%>%select(type=concept, regex=Regexfrançais )
-# regex<- data.frame(type=c('nlpFR','nlpPR'), regex = c("(?i)(\\bFR\\b|facteurs?\\s+rh?umato\\w*)","(?i)\\b(pol[iy]\\s*?-*?\\s*?)?(arth?rites?|arth?ropath?[yi]\\w+|rh?umath?i\\w+)\\s+psoria\\w+\\b"))
-
-regex<- regex%>%arrange(type)%>%pull(regex)
-regex<- gsub("\\?\\?","?",regex)
-res_regex_patient<- phrase%>%select(-Phrases.test)%>%mutate(id = 1:n() )
-library(tidyr)
-res_regex_patient<-res_regex_patient%>%select(-nlpccp5)%>%mutate(id= 1:n())
-regex_phrases<- phrase%>%pivot_longer(cols = -Phrases.test)%>%filter(value==1)%>%filter(!duplicated(name))%>%
-  select(titre=name, phrase=Phrases.test)
-# regex_phrases<-data.frame(id = 1:2,titre = vec_data, phrase = c("Découverte d’une arthrite rhumatoïde juvénile chez un adolescent","Dosage des ACCP et du FR augmenté"))
-# res_regex_patient<- data.frame(id = 1:2 ,nlpFR = c(F,T),nlpPR = c(T,F))
-# res_verif<-read.csv("essai.csv")
-res_i<-res_regex_patient[1,]
-res_verif<-res_regex_patient[0,]
-res_regex_patient[res_regex_patient==1]<-T
-
-phrases_patient<-phrase%>%select(phrase=Phrases.test)%>%mutate(id = 1:n() )
-  
-  
-for(i in 1:dim(res_regex_patient)[2]) res_regex_patient[,i]<- ifelse(res_regex_patient[,i]==1,T,F)
-res_regex_patient$id<- 1:(dim(res_regex_patient)[1])
-
 
 
 
@@ -84,7 +49,7 @@ server <- function(input, output, session) {
 
         if(length(res_verif_i$df$id)>0)  res_regex_patient<-res_regex_patient%>%filter(!id%in%res_verif_i$df$id)    
         pos<-res_regex_patient[res_regex_patient[,type_i],]$id
-       
+        pos<-sample(pos,1) 
        
          if(type_i %in%c("nlpRF1")){
         neg<-res_regex_patient[!res_regex_patient[,type_i]&
@@ -92,7 +57,7 @@ server <- function(input, output, session) {
         neg2<- res_regex_patient[!res_regex_patient[,type_i]&
                                      !res_regex_patient[,"rfstandalone"],]$id
         neg<-c(neg,neg,neg2)
-            
+        neg<-sample(neg,1)    
             
         }else if(type_i %in%c("nlpccp")){
         neg<-res_regex_patient[!res_regex_patient[,type_i]&
@@ -100,13 +65,15 @@ server <- function(input, output, session) {
         neg2<-res_regex_patient[!res_regex_patient[,type_i]&
                                     !res_regex_patient[,"ccpstandalone"],]$id
         neg<-c(neg,neg,neg2)
+        neg<-sample(neg,1) 
         }else{
        neg<-res_regex_patient[!res_regex_patient[,type_i],]$id
-       neg<-c(neg,neg)
+      
+       neg<-sample(neg,1) 
        
         }
         dataselection<- c(
-            pos, pos, pos, pos, neg)
+            pos, neg)
 
         id_i<-sample( dataselection,1)
         
